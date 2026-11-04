@@ -1,0 +1,23 @@
+{{define "content"}}{{$d := .Data}}{{$h := $d.H}}
+<section class="hosthead">
+  <span class="g g-{{$h.Grade}} big" title="score {{$h.Score}}/100">{{$h.Grade}}</span>
+  <div>
+    <p class="muted small">Score {{$h.Score}}/100 · {{$h.OpenTotal}} écart(s) ouvert(s){{if $h.New}}, dont {{$h.New}} nouveau(x){{end}}</p>
+    <div class="trend sm">{{spark $h.Trend 260 40}}</div>
+  </div>
+  <form method="post" action="/retest" class="push">
+    <input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="host" value="{{$h.Host}}"><input type="hidden" name="back" value="{{.Path}}">
+    <button type="submit">{{template "ic" "refresh"}}Re-tester cet hôte</button>
+  </form>
+</section>
+{{range $d.Route}}
+<section class="panel">
+  <div class="panel-head"><h2>Route <span class="mono">{{.Name}}</span></h2><span class="muted small">{{.Source}}{{if .Ports}} · ports {{range $i, $p := .Ports}}{{if $i}}, {{end}}{{$p}}{{end}}{{end}}</span></div>
+  <p class="chain pad">{{range .Middlewares}}<span class="mw kind-{{.Kind}}" title="{{.Type}}">{{.Name}}</span>{{else}}<span class="muted">aucun middleware</span>{{end}}</p>
+  {{range .Problems}}<p class="pad small"><span class="tag">{{.}}</span></p>{{end}}
+</section>
+{{end}}
+{{template "tabs" $d.Issues.Tabs}}
+{{template "filters" $d.Issues}}
+{{template "issuetable" $d.Issues}}
+{{end}}

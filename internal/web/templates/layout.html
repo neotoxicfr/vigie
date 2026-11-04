@@ -1,0 +1,90 @@
+{{define "layout"}}<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>{{.Title}} · vigie</title>
+<link rel="stylesheet" href="/static/app.css">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<script src="/static/app.js" defer></script>
+</head>
+<body>
+{{template "icons"}}
+{{if .User}}
+<div class="shell">
+  <aside class="side" aria-label="Navigation">
+    <a class="brand" href="/"><img src="/static/icon.svg" alt="" width="24" height="24"><span>vigie</span></a>
+    <nav>
+      <a href="/" {{if eq .Nav "overview"}}aria-current="page"{{end}}>{{template "ic" "grid"}}<span>Vue d'ensemble</span></a>
+      <a href="/issues" {{if eq .Nav "issues"}}aria-current="page"{{end}}>{{template "ic" "alert"}}<span>Écarts</span></a>
+      <a href="/problems" {{if eq .Nav "problems"}}aria-current="page"{{end}}>{{template "ic" "layers"}}<span>Problèmes</span></a>
+      <a href="/hosts" {{if eq .Nav "hosts"}}aria-current="page"{{end}}>{{template "ic" "server"}}<span>Hôtes</span></a>
+      <a href="/runs" {{if eq .Nav "runs"}}aria-current="page"{{end}}>{{template "ic" "clock"}}<span>Passages</span></a>
+      <a href="/inventory" {{if eq .Nav "inventory"}}aria-current="page"{{end}}>{{template "ic" "list"}}<span>Inventaire</span></a>
+      <a href="/settings" {{if eq .Nav "settings"}}aria-current="page"{{end}}>{{template "ic" "sliders"}}<span>Réglages</span></a>
+    </nav>
+    <div class="side-foot">
+      <button type="button" class="ghost theme-toggle" data-theme-toggle aria-label="Basculer clair / sombre">{{template "ic" "contrast"}}<span>Thème</span></button>
+      <form method="post" action="/logout">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <button class="ghost" type="submit" title="Se déconnecter">{{template "ic" "logout"}}<span>{{.User}}</span></button>
+      </form>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <h1>{{.Title}}</h1>
+      <div class="top-run" data-progress {{if .Progress.Running}}data-running{{end}}>
+        {{if .Progress.Running}}
+          <span class="live" role="status"><span class="pulse"></span>{{if .Progress.Scope}}Re-test de {{.Progress.Scope}}{{else}}Passage en cours{{end}} · <span data-phase>{{.Progress.Phase}}</span> <span data-pct>{{.Progress.Percent}} %</span></span>
+          <span class="bar" aria-hidden="true"><span data-bar data-val="{{.Progress.Percent}}"></span></span>
+        {{else}}
+          {{with .Last}}<span class="muted small" title="{{when .Started}}">Dernier passage {{ago .Finished}}</span>{{end}}
+          <form method="post" action="/run">
+            <input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="back" value="{{.Path}}">
+            <button type="submit">{{template "ic" "play"}}Lancer un passage</button>
+          </form>
+        {{end}}
+      </div>
+    </header>
+    {{if .Flash}}<p class="flash ok" role="status">{{.Flash}}</p>{{end}}
+    {{if .Error}}<p class="flash err" role="alert">{{.Error}}</p>{{end}}
+    <main>{{template "content" .}}</main>
+  </div>
+</div>
+<div class="drawer" data-drawer hidden>
+  <div class="drawer-back" data-drawer-close></div>
+  <aside class="drawer-panel" role="dialog" aria-modal="true" aria-label="Détail de l'écart">
+    <button type="button" class="ghost drawer-x" data-drawer-close aria-label="Fermer">{{template "ic" "x"}}</button>
+    <div data-drawer-body></div>
+  </aside>
+</div>
+{{else}}
+<main class="bare">{{template "content" .}}</main>
+{{end}}
+</body>
+</html>{{end}}
+
+{{define "ic"}}<svg class="ic" aria-hidden="true"><use href="#i-{{.}}"/></svg>{{end}}
+
+{{define "icons"}}<svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 2.4 17.6A2 2 0 0 0 4.1 20.6h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+<symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+<symbol id="i-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" class="fill"/></symbol>
+<symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5-12-7.5z"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3z"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+</svg>{{end}}

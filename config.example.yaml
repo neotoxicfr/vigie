@@ -1,0 +1,60 @@
+# Configuration de vigie. Rien n'a de valeur par défaut liée à une infrastructure :
+# déclare tes sources, tes points de vue et ce que tu considères comme public.
+
+listen: ":8080"
+data_dir: /data
+
+# IP publiques de sortie de cette machine, si tu les connais : vigie marque comme
+# « point de vue privilégié » toute mesure faite alors que ces IP passent une
+# allowlist ou un bypass. vigie n'interroge aucun service tiers pour les deviner.
+public_ips: []
+
+auth:
+  # Au moins une méthode. Hash à générer avec : vigie hash-password
+  users: []
+  #  - name: admin
+  #    password_hash: "$argon2id$v=19$m=65536,t=3,p=2$..."
+  # En-tête d'utilisateur posé par un proxy d'authentification (Authelia, Authentik…),
+  # cru seulement depuis ces plages.
+  # proxy:
+  #   header: Remote-User
+  #   trusted_proxies: [172.16.0.0/12]
+
+sources:
+  traefik: []
+  #  - name: principal
+  #    url: http://traefik:8080            # API de Traefik, en lecture seule
+  #    username: ""                         # si l'API est protégée par basicAuth
+  #    password_file: ""
+  caddy: []
+  #  - {name: principal, location: "http://caddy:2019"}   # API admin
+  nginx: []
+  #  - {name: principal, location: /etc/nginx}            # dossier monté en lecture seule
+  npm: []
+  #  - {name: principal, location: /npm/database.sqlite}  # base SQLite, lecture seule
+
+vantages:
+  internal: []   # adresse du reverse proxy jointe directement
+
+policy:
+  public: []           # hôtes publics voulus, motifs path.Match : ["www.example.com", "*.pub.example.com"]
+  templates: {}        # modèles de chaîne : { admin: [crowdsec, ratelimit, authelia] }
+  route_templates: {}  # route → modèle : { "*@docker": admin }
+  authelia_config: ""  # configuration.yml d'Authelia (seul access_control est lu)
+
+scan:
+  budget: 20000   # opérations réseau max par passage
+  ports: []       # vide = liste par défaut (35 ports courants)
+  resolver: ""    # ip:port, vide = /etc/resolv.conf
+  timeout: 2h
+
+# Analyse d'un passage par une IA, à la demande uniquement (bouton sur la page).
+ai:
+  provider: ""          # "anthropic" ou "openai" (toute API compatible : Ollama, LM Studio, OpenRouter…)
+  model: ""             # anthropic : claude-opus-5-5 par défaut
+  base_url: ""          # openai : ex. http://ollama:11434/v1
+  api_key_file: ""      # clé dans un fichier
+
+# Serveur MCP sur /mcp pour piloter vigie depuis un client IA (lecture + lancer un passage).
+mcp:
+  token_file: ""        # jeton de 32 caractères au moins : openssl rand -hex 32

@@ -1,0 +1,73 @@
+{{define "content"}}{{$d := .Data}}
+{{if not $d.Run}}
+<section class="onboard">
+  <h2>Premier passage</h2>
+  <ol>
+    <li>Déclare tes sources (Traefik, Caddy, nginx, NPM) dans <a href="/settings#sources">Réglages</a>, ou ajoute des cibles à la main dans l'<a href="/inventory">inventaire</a>.</li>
+    <li>Lance un passage avec le bouton en haut à droite : il est passif et léger.</li>
+    <li>Trie les écarts : corrige, ou assume-les pour un hôte ou partout.</li>
+  </ol>
+</section>
+{{else}}
+<section class="strip" aria-label="Écarts ouverts">
+  <a class="stat" href="/issues"><span class="k">Écarts ouverts</span><b>{{$d.OpenTotal}}</b><span class="sub">{{if $d.New}}{{$d.New}} nouveaux{{else}}rien de nouveau{{end}}</span></a>
+  <a class="stat s3" href="/issues?sev=3"><span class="k">Élevés</span><b>{{index $d.Open 3}}</b></a>
+  <a class="stat s2" href="/issues?sev=2"><span class="k">Moyens</span><b>{{index $d.Open 2}}</b></a>
+  <a class="stat s1" href="/issues?sev=1"><span class="k">Faibles</span><b>{{index $d.Open 1}}</b></a>
+  <a class="stat" href="/hosts"><span class="k">Hôtes</span><b>{{$d.Hosts}}</b>
+    <span class="grades">{{range $d.Grades}}{{if .N}}<span class="g g-{{.Grade}}" title="{{.N}} hôte(s) en {{.Grade}}">{{.Grade}}<i>{{.N}}</i></span>{{end}}{{end}}</span></a>
+</section>
+
+{{if $d.AI}}
+<section class="panel" id="ia">
+  <div class="panel-head"><h2>{{template "ic" "spark"}} Analyse par IA du dernier passage</h2>{{with $d.Analysis}}<span class="muted small">{{.Provider}} · {{when .At}}{{if .Masked}} · hôtes masqués{{end}}</span>{{end}}</div>
+  <div class="pad">
+    {{if $d.AIError}}<p class="flash err inline-flash" role="alert">{{$d.AIError}}</p>{{end}}
+    {{if $d.Analyzing}}<p class="live"><span class="pulse"></span>Analyse en cours… recharge dans une minute.</p>
+    {{else}}
+    <form method="post" action="/runs/{{ref $d.Run.Started}}/analyze" class="inline">
+      <input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="back" value="/#ia">
+      <label class="chk-line"><input type="checkbox" name="mask" value="1" checked> masquer hôtes et IP avant l'envoi</label>
+      <button type="submit" class="secondary">{{if $d.Analysis}}Relancer l'analyse{{else}}Analyser ce passage{{end}}</button>
+    </form>
+    <p class="small muted">Envoie à {{$d.AI}} les constats et les chaînes de middlewares, jamais la configuration brute ni de secret. Chaque analyse est facturée par le fournisseur.</p>
+    {{end}}
+    {{with $d.Analysis}}<div class="analysis">{{markdown .Text}}</div>{{end}}
+  </div>
+</section>
+{{end}}
+
+<div class="cols">
+  <section class="panel">
+    <div class="panel-head"><h2>Nouveaux depuis le passage précédent</h2><a class="more" href="/issues?etat=nouveau">Tout voir {{template "ic" "arrow"}}</a></div>
+    {{if $d.Fresh}}
+    <ul class="mini">
+      {{range $d.Fresh}}<li><a href="/issue/{{.Key}}" data-drawer-link>{{template "sev" .Severity}}<span class="t">{{.Title}}</span><span class="mono muted">{{.Target}}</span></a></li>{{end}}
+    </ul>
+    {{else}}<p class="muted pad">Aucun nouvel écart.</p>{{end}}
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Écarts ouverts au fil des passages</h2></div>
+    {{if gt (len $d.Trend) 1}}
+    <div class="trend">{{spark $d.Trend 560 120}}</div>
+    <div class="trend-legend"><span>{{$d.TrendFrom}} : {{index $d.Trend 0}}</span><span>maintenant : {{$d.OpenTotal}}</span></div>
+    {{else}}<p class="muted pad">La courbe apparaît à partir de deux passages complets.</p>{{end}}
+  </section>
+</div>
+
+<div class="cols">
+  <section class="panel">
+    <div class="panel-head"><h2>Hôtes les plus exposés</h2><a class="more" href="/hosts">Tous les hôtes {{template "ic" "arrow"}}</a></div>
+    <table class="plain-t">
+      <tbody>{{range $d.Worst}}<tr><td class="c-grade"><span class="g g-{{.Grade}}">{{.Grade}}</span></td><td><a class="mono" href="/host/{{.Host}}">{{.Host}}</a></td><td class="num">{{if index .Open 3}}<span class="sev sev-3"><span class="dot"></span>{{index .Open 3}}</span>{{end}} {{if index .Open 2}}<span class="sev sev-2"><span class="dot"></span>{{index .Open 2}}</span>{{end}} {{if index .Open 1}}<span class="sev sev-1"><span class="dot"></span>{{index .Open 1}}</span>{{end}}</td></tr>{{end}}</tbody>
+    </table>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Derniers passages</h2><a class="more" href="/runs">Historique {{template "ic" "arrow"}}</a></div>
+    <table class="plain-t">
+      <tbody>{{range $d.Runs}}<tr><td><a href="/issues?passage={{ref .Started}}&etat=tout">{{when .Started}}</a></td><td class="muted">{{if .Scope}}re-test {{.Scope}}{{else}}complet{{end}}</td><td><span class="status st-{{.Status}}">{{.Status}}</span></td><td class="num">{{.Issues}}</td></tr>{{end}}</tbody>
+    </table>
+  </section>
+</div>
+{{end}}
+{{end}}

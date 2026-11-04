@@ -1,0 +1,13 @@
+{{define "content"}}
+<section class="login">
+  <img src="/static/icon.svg" alt="" width="40" height="40">
+  <h1>vigie</h1>
+  {{if .Error}}<p class="flash err" role="alert">{{.Error}}</p>{{end}}
+  <form method="post" action="/login" class="stack">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label>Identifiant <input name="user" autocomplete="username" required autofocus></label>
+    <label>Mot de passe <input name="password" type="password" autocomplete="current-password" required></label>
+    <button type="submit">Se connecter</button>
+  </form>
+</section>
+{{end}}

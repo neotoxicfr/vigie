@@ -1,0 +1,32 @@
+{{define "content"}}{{$d := .Data}}{{$csrf := .CSRF}}
+<p class="lede">Un problème = un contrôle et toutes les cibles qu'il touche. Corriger un middleware partagé règle souvent la ligne entière.</p>
+{{if $d.Problems}}
+<div class="plist">
+{{range $d.Problems}}
+<details class="prob">
+  <summary>
+    {{template "sev" .Severity}}
+    <span class="t">{{.Title}}</span>
+    <span class="n">{{len .Items}} cible{{if gt (len .Items) 1}}s{{end}}{{if .New}} <span class="tag tag-new">{{.New}} nouv.</span>{{end}}</span>
+  </summary>
+  <div class="prob-body">
+    <p class="mono muted small">{{.Check}}</p>
+    {{if .HasKB}}<p>{{.KB.Risk}}</p>{{end}}
+    <p class="hostchips">{{range .Items}}<a class="hchip mono{{if .New}} is-new{{end}}" href="/issue/{{.Key}}" data-drawer-link>{{.Target}}</a>{{end}}</p>
+    <details class="accept">
+      <summary class="button secondary">Assumer partout…</summary>
+      <form method="post" action="/accept" class="stack">
+        <input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="scope" value="global"><input type="hidden" name="check" value="{{.Check}}"><input type="hidden" name="back" value="/problems">
+        <label>Raison <input name="note" required maxlength="500" placeholder="ex. choix assumé pour tout le parc"></label>
+        <p class="small muted">Le contrôle ne sera plus enregistré dans les passages. Réactivable dans Réglages &gt; Exclusions.</p>
+        <button type="submit">Assumer partout</button>
+      </form>
+    </details>
+  </div>
+</details>
+{{end}}
+</div>
+{{else}}
+<div class="empty">{{template "ic" "check"}}<p>Aucun problème ouvert.</p></div>
+{{end}}
+{{end}}

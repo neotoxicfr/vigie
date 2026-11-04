@@ -1,0 +1,10 @@
+[
+ {"name":"app@docker","provider":"docker","status":"enabled","rule":"Host(`app.example.com`)","entryPoints":["websecure"],"middlewares":["crowdsec@file","admin-chain@file"],"service":"app","tls":{"certResolver":"le"}},
+ {"name":"site@docker","provider":"docker","status":"enabled","rule":"Host(`example.com`) || Host(`www.example.com`)","entryPoints":["websecure"],"middlewares":["crowdsec@file","public-chain@file","www"],"service":"app","tls":{}},
+ {"name":"push@docker","provider":"docker","status":"enabled","rule":"Host(`app.example.com`) && PathPrefix(`/push`)","entryPoints":["websecure"],"middlewares":["crowdsec@file","ipallow@file"],"service":"app","tls":{}},
+ {"name":"legacy@file","provider":"file","status":"enabled","rule":"Host(`a.example.com`,`b.example.com`)","entryPoints":["web","websecure"],"service":"svc","tls":{}},
+ {"name":"wild@docker","provider":"docker","status":"enabled","rule":"HostRegexp(`^.+\\.example\\.com$`)","entryPoints":["websecure"],"middlewares":["crowdsec@file"],"service":"app","tls":{}},
+ {"name":"broken@docker","provider":"docker","status":"warning","rule":"Host(`broken.example.com`)","entryPoints":["websecure","ghost"],"middlewares":["crowdsec@file","missing@file","loop@file"],"service":"app"},
+ {"name":"ping@internal","provider":"internal","status":"enabled","rule":"PathPrefix(`/ping`)","entryPoints":["web"],"service":"ping@internal"},
+ {"name":"off@docker","provider":"docker","status":"disabled","rule":"Host(`off.example.com`)","entryPoints":["websecure"],"service":"app"}
+]

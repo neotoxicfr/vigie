@@ -1,0 +1,10 @@
+{{define "content"}}{{$d := .Data}}
+{{if $d.Run}}
+  {{template "tabs" $d.Tabs}}
+  {{template "filters" $d}}
+  {{if $d.F.Run}}<p class="muted small">Passage du {{when $d.Run.Started}}{{if $d.Run.Scope}} (re-test de {{$d.Run.Scope}}){{end}} · <a href="/issues">revenir à l'état actuel</a> · <a href="/runs/{{ref $d.Run.Started}}/export.json">{{template "ic" "download"}}export JSON</a></p>{{end}}
+  {{template "issuetable" $d}}
+{{else}}
+  <div class="empty">{{template "ic" "clock"}}<p>Pas encore de passage. Lance le premier avec le bouton en haut à droite.</p></div>
+{{end}}
+{{end}}

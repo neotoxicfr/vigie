@@ -1,0 +1,18 @@
+services:
+  vigie:
+    image: ghcr.io/neotoxicfr/vigie:0.5.0
+    container_name: vigie
+    restart: unless-stopped
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    environment:
+      - TZ=Europe/Paris             # fuseau des heures affichées (UTC sinon)
+    volumes:
+      - ./config.yaml:/config/config.yaml:ro
+      - ./data:/data                # à rendre inscriptible par l'uid 65532 : chown 65532:65532 data
+      # - ./secrets:/run/secrets:ro  # clés d'API, jeton MCP, mots de passe
+    networks: [proxy]               # le réseau où l'API du reverse proxy est joignable
+networks:
+  proxy:
+    external: true

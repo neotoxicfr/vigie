@@ -1,0 +1,120 @@
+{{define "content"}}{{$d := .Data}}{{$r := $d.R}}{{$csrf := .CSRF}}
+<nav class="toc" aria-label="Sections">
+  <a href="#sources">Sources</a><a href="#vantages">Points de vue</a><a href="#policy">Politique</a><a href="#scan">Passages</a><a href="#cloudflare">Cloudflare</a><a href="#ai">IA</a><a href="#mcp">MCP</a><a href="#exclusions">Exclusions</a>
+</nav>
+
+<section class="panel" id="sources">
+  <div class="panel-head"><h2>Sources</h2><span class="muted small">Lues en lecture seule à chaque passage</span></div>
+  <form method="post" action="/settings/sources" class="pad stack">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <fieldset class="rows">
+      <legend>Traefik <span class="muted small">(API, ex. http://traefik:8080)</span></legend>
+      {{range $r.Sources.Traefik}}<div class="row4"><input name="traefik_name" value="{{.Name}}" placeholder="nom" aria-label="Nom"><input name="traefik_url" value="{{.URL}}" placeholder="http://traefik:8080" aria-label="URL"><input name="traefik_user" value="{{.Username}}" placeholder="utilisateur (option)" aria-label="Utilisateur"><input name="traefik_pass" value="{{.PasswordFile}}" placeholder="/run/secrets/traefik_password" aria-label="Fichier du mot de passe"></div>{{end}}
+      <div class="row4"><input name="traefik_name" placeholder="nom" aria-label="Nom (nouvelle source)"><input name="traefik_url" placeholder="http://traefik:8080" aria-label="URL (nouvelle source)"><input name="traefik_user" placeholder="utilisateur (option)" aria-label="Utilisateur (nouvelle source)"><input name="traefik_pass" placeholder="/run/secrets/traefik_password" aria-label="Fichier du mot de passe (nouvelle source)"></div>
+    </fieldset>
+    {{template "named" (dict "Kind" "caddy" "Label" "Caddy" "Hint" "API admin, ex. http://caddy:2019" "List" $r.Sources.Caddy)}}
+    {{template "named" (dict "Kind" "nginx" "Label" "nginx" "Hint" "dossier monté contenant nginx.conf" "List" $r.Sources.Nginx)}}
+    {{template "named" (dict "Kind" "npm" "Label" "Nginx Proxy Manager" "Hint" "base SQLite, ex. /npm/database.sqlite" "List" $r.Sources.NPM)}}
+    <p class="small muted">Vider une ligne la retire.</p>
+    <div><button type="submit">Enregistrer les sources</button></div>
+  </form>
+</section>
+
+<section class="panel" id="vantages">
+  <div class="panel-head"><h2>Points de vue</h2></div>
+  <form method="post" action="/settings/vantages" class="pad grid2">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <label>Résolveur public <input name="resolver" value="{{$r.Scan.Resolver}}" placeholder="1.1.1.1:53"><span class="hint">Sert à détecter le DNS divisé : la mesure « public » suit alors sa réponse, comme un visiteur.</span></label>
+    <label>IP publiques de sortie de vigie <textarea name="public_ips" rows="2" placeholder="203.0.113.7">{{index $d.Text "public_ips"}}</textarea><span class="hint">Pour repérer les mesures privilégiées (allowlist, bypass).</span></label>
+    <label>Interne <textarea name="internal" rows="2" placeholder="adresse du reverse proxy">{{index $d.Text "internal"}}</textarea><span class="hint">Le proxy joint directement, sans DNS ni CDN.</span></label>
+    <fieldset class="rows span2">
+      <legend>Sorties par proxy <span class="muted small">(vue de l'extérieur : HTTP par le CDN et ports de l'origine)</span></legend>
+      {{range $r.Vantages.Proxies}}<div class="row4"><input name="exit_name" value="{{.Name}}" placeholder="nom (vpn, bureau…)" aria-label="Nom"><input name="exit_url" value="{{.URL}}" placeholder="http://gluetun:8888 ou socks5://hôte:1080" aria-label="URL"><input name="exit_user" value="{{.Username}}" placeholder="identifiant (option)" aria-label="Identifiant"><input name="exit_pass" value="{{.PasswordFile}}" placeholder="/run/secrets/…" aria-label="Fichier du mot de passe"></div>{{end}}
+      <div class="row4"><input name="exit_name" placeholder="nom (vpn, bureau…)" aria-label="Nom (nouvelle sortie)"><input name="exit_url" placeholder="http://gluetun:8888 ou socks5://hôte:1080" aria-label="URL (nouvelle sortie)"><input name="exit_user" placeholder="identifiant (option)" aria-label="Identifiant (nouvelle sortie)"><input name="exit_pass" placeholder="/run/secrets/…" aria-label="Fichier du mot de passe (nouvelle sortie)"></div>
+      <span class="hint">L'IP et le pays de chaque sortie sont lus sur /cdn-cgi/trace d'un hôte audité. Une sortie dont l'IP est en liste blanche ou en bypass donne des mesures marquées privilégiées.</span>
+    </fieldset>
+    <div class="span2"><button type="submit">Enregistrer</button></div>
+  </form>
+</section>
+
+<section class="panel" id="policy">
+  <div class="panel-head"><h2>Politique</h2></div>
+  <form method="post" action="/settings/policy" class="pad grid2">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <label>Hôtes publics voulus <textarea name="public" rows="5" placeholder="www.example.com&#10;*.pub.example.com">{{index $d.Text "public"}}</textarea><span class="hint">Un hôte exposé sans contrôle d'accès hors de cette liste est un écart élevé.</span></label>
+    <label>Configuration Authelia <input name="authelia" value="{{$r.Policy.AutheliaConfig}}" placeholder="/authelia/configuration.yml"><span class="hint">Seul access_control est lu, pour déduire ce qu'un inconnu voit.</span></label>
+    <div class="span2"><button type="submit">Enregistrer</button></div>
+  </form>
+</section>
+
+<section class="panel" id="scan">
+  <div class="panel-head"><h2>Passages</h2></div>
+  <form method="post" action="/settings/scan" class="pad grid2">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <label>Passage automatique <select name="cadence">{{range $d.Cadences}}<option value="{{.Value}}" {{if eq .Value $d.Cadence}}selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+    <label>Durée maximale <input name="timeout" value="{{$r.Scan.Timeout}}" placeholder="2h"></label>
+    <label>Budget de requêtes <input name="budget" value="{{$r.Scan.Budget}}" inputmode="numeric"><span class="hint">Garde-fou par passage ; au-delà le passage est partiel.</span></label>
+    <label>Ports explorés <input name="ports" value="{{index $d.Text "ports"}}" placeholder="vide = 35 ports courants"></label>
+    <label class="span2">Page à juger par hôte <textarea name="pages" rows="3" placeholder="office.example.com /browser/dist/cool.html">{{index $d.Text "pages"}}</textarea><span class="hint">Une ligne « hôte /chemin » quand la racine n'est pas une vraie page (un « OK » en texte, une API) : en-têtes, cookies et contenu sont jugés sur cette page.</span></label>
+    <div class="span2"><button type="submit">Enregistrer</button></div>
+  </form>
+</section>
+
+<section class="panel" id="cloudflare">
+  <div class="panel-head"><h2>Cloudflare</h2><span class="secret {{if $d.CF.OK}}ok{{end}}">jeton : {{$d.CF.State}}</span></div>
+  <form method="post" action="/settings/cloudflare" class="pad grid2">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <label class="chk-line"><input type="checkbox" name="enabled" value="1" {{if $r.CDN.Cloudflare.Enabled}}checked{{end}}> Lire la zone à chaque passage</label>
+    <label>Fichier du jeton <input name="token_file" value="{{$r.CDN.Cloudflare.TokenFile}}" placeholder="/run/secrets/cloudflare_api_token"><span class="hint">Jeton restreint en lecture : Zone Read, Zone Settings Read, SSL and Certificates Read, DNS Read, Zone WAF Read. Jamais la Global API Key.</span></label>
+    <p class="span2 small muted">Apporte : mode SSL, TLS minimum, HTTPS forcé, HSTS, origine authentifiée, DNSSEC, adresses de l'origine (cibles des enregistrements proxifiés, testées en contournant le CDN) et enregistrements qui les exposent, et les règles WAF (géo, robots) dans la déduction « inconnu ».</p>
+    <div class="span2 btns"><button type="submit">Enregistrer</button><button type="submit" class="secondary" form="cf-test">Tester l'accès</button></div>
+  </form>
+  <form method="post" action="/settings/cloudflare-test" id="cf-test"><input type="hidden" name="csrf" value="{{$csrf}}"></form>
+</section>
+
+<section class="panel" id="ai">
+  <div class="panel-head"><h2>Analyse par IA</h2><span class="secret {{if $d.AI.OK}}ok{{end}}">clé : {{$d.AI.State}}</span></div>
+  <form method="post" action="/settings/ai" class="pad grid2">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <label>Fournisseur <select name="provider"><option value="" {{if eq $r.AI.Provider ""}}selected{{end}}>désactivé</option><option value="anthropic" {{if eq $r.AI.Provider "anthropic"}}selected{{end}}>Anthropic (Claude)</option><option value="openai" {{if eq $r.AI.Provider "openai"}}selected{{end}}>compatible OpenAI (Ollama, LM Studio, OpenRouter…)</option></select></label>
+    <label>Modèle <input name="model" value="{{$r.AI.Model}}" placeholder="claude-opus-5-5"></label>
+    <label>URL de base <input name="base_url" value="{{$r.AI.BaseURL}}" placeholder="compatible OpenAI : http://ollama:11434/v1"></label>
+    <label>Fichier de la clé <input name="key_file" value="{{$r.AI.APIKeyFile}}" placeholder="/run/secrets/anthropic_api_key"></label>
+    <label class="span2">Choix déjà tranchés <textarea name="context" rows="6" maxlength="8000" placeholder="Une règle par ligne : ce qui est voulu, ce qu'il ne faut jamais proposer.">{{$r.AI.Context}}</textarea><span class="hint">Donnés à chaque analyse : l'IA ne propose pas de correctif qui les contredit.</span></label>
+    <p class="span2 small muted">Envoie les constats, les chaînes de middlewares et ces choix, jamais la configuration brute ; hôtes et IP masquables à chaque analyse.</p>
+    <div class="span2"><button type="submit">Enregistrer</button></div>
+  </form>
+</section>
+
+<section class="panel" id="mcp">
+  <div class="panel-head"><h2>Accès machine</h2><span class="secret {{if $d.MCP.OK}}ok{{end}}">MCP : {{$d.MCP.State}}</span><span class="secret {{if $d.API.OK}}ok{{end}}">résumé : {{$d.API.State}}</span></div>
+  <form method="post" action="/settings/mcp" class="pad grid2">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <label>Fichier du jeton MCP <input name="token_file" value="{{$r.MCP.TokenFile}}" placeholder="/run/secrets/mcp_token"><span class="hint">32 caractères au moins : <code>openssl rand -hex 32</code>. Actif dès que le fichier est rempli.</span></label>
+    <label>Fichier du jeton de résumé <input name="api_token_file" value="{{$r.API.TokenFile}}" placeholder="/run/secrets/summary_token"><span class="hint">Lecture seule, pour un tableau de bord : <code>GET {{$d.APIURL}}</code> avec <code>Authorization: Bearer</code>. Compteurs seulement, aucun nom d'hôte.</span></label>
+    <div class="span2 small">
+      <p>Point d'accès : <code>{{$d.MCPURL}}</code> (lecture et lancement d'un passage, jamais « assumer »).</p>
+      <div class="code"><button type="button" class="ghost copy" data-copy aria-label="Copier">{{template "ic" "copy"}}</button><pre><code>claude mcp add --transport http vigie {{$d.MCPURL}} --header "Authorization: Bearer $(cat mcp_token)"</code></pre></div>
+    </div>
+    <div class="span2"><button type="submit">Enregistrer</button></div>
+  </form>
+</section>
+
+<section class="panel" id="exclusions">
+  <div class="panel-head"><h2>Exclusions</h2><span class="muted small">Contrôles assumés partout : plus enregistrés dans les passages</span></div>
+  {{if $d.Exclusions}}
+  <table class="plain-t">
+    <tbody>{{range $d.Exclusions}}<tr><td class="mono">{{.Check}}</td><td class="muted small">{{with .Acc}}{{.Author}}, {{when .At}} : « {{.Note}} »{{end}}</td><td class="num"><form method="post" action="/unaccept"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="check" value="{{.Check}}"><input type="hidden" name="back" value="/settings#exclusions"><button class="ghost" type="submit">Réactiver</button></form></td></tr>{{end}}</tbody>
+  </table>
+  {{else}}<p class="muted pad">Aucune exclusion. Pour en créer une : « Assumer… » puis « Partout » sur un écart ou un problème.</p>{{end}}
+</section>
+{{end}}
+
+{{define "named"}}
+<fieldset class="rows">
+  <legend>{{.Label}} <span class="muted small">({{.Hint}})</span></legend>
+  {{$k := .Kind}}
+  {{range .List}}<div class="row2"><input name="{{$k}}_name" value="{{.Name}}" placeholder="nom" aria-label="Nom"><input name="{{$k}}_loc" value="{{.Location}}" aria-label="Emplacement"></div>{{end}}
+  <div class="row2"><input name="{{$k}}_name" placeholder="nom" aria-label="Nom (nouvelle source)"><input name="{{$k}}_loc" placeholder="emplacement" aria-label="Emplacement (nouvelle source)"></div>
+</fieldset>
+{{end}}

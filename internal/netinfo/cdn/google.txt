@@ -1,0 +1,7 @@
+# google
+# source : GFE documentés (35.191.0.0/16, 130.211.0.0/22) + TXT _cloud-eoips.googleusercontent.com
+# mis à jour : 2026-10-23
+34.96.0.0/20
+34.127.192.0/18
+35.191.0.0/16
+130.211.0.0/22

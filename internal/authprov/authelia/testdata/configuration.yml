@@ -1,0 +1,47 @@
+# Configuration fictive ; le secret ci-dessous ne doit jamais ressortir.
+jwt_secret: SECRET-NE-PAS-AFFICHER
+session:
+  secret: SECRET-NE-PAS-AFFICHER
+access_control:
+  default_policy: deny
+  networks:
+    - name: interne
+      networks:
+        - 192.168.0.0/16
+        - 2001:db8:1::/48
+    - name: bureau
+      networks: 198.51.100.7
+  rules:
+    - domain: public.example.com
+      policy: bypass
+    - domain: "*.example.org"
+      networks: interne
+      policy: bypass
+    - domain: ["*.example.org", "example.org"]
+      policy: one_factor
+    - domain: api.example.com
+      resources:
+        - '^/api/public([/?].*)?$'
+      methods: [get, HEAD]
+      policy: bypass
+    - domain: api.example.com
+      query:
+        - - key: token
+          - key: mode
+            value: lecture
+        - - key: debug
+            operator: absent
+          - key: v
+            operator: pattern
+            value: '^[0-9]+$'
+      policy: one_factor
+    - domain: api.example.com
+      subject: group:admins
+      policy: deny
+    - domain_regex: '^(?P<User>\w+)\.users\.example\.com$'
+      policy: two_factor
+    - domain: "{user}.home.example.com"
+      policy: one_factor
+    - domain: bureau.example.com
+      networks: [bureau, 203.0.113.0/24]
+      policy: bypass

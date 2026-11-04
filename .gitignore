@@ -1,0 +1,7 @@
+bin/
+.audit/
+*.db
+*.db-*
+# Notes de travail internes, gardées hors du dépôt
+CLAUDE.md
+docs/plans/

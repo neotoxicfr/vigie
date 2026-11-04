@@ -1,0 +1,5 @@
+[
+ {"name":"app@docker","provider":"docker","type":"loadbalancer","loadBalancer":{"servers":[{"url":"http://10.0.0.5:80"}]}},
+ {"name":"svc@file","provider":"file","type":"loadbalancer","loadBalancer":{"servers":[{"url":"http://10.0.0.6:8080"},{"url":"http://10.0.0.7:8080"}]}},
+ {"name":"ping@internal","provider":"internal"}
+]

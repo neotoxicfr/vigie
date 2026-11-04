@@ -1,0 +1,507 @@
+{
+ "admin": {
+  "listen": "localhost:2019"
+ },
+ "apps": {
+  "http": {
+   "servers": {
+    "srv0": {
+     "listen": [
+      ":443"
+     ],
+     "routes": [
+      {
+       "match": [
+        {
+         "host": [
+          "app.example.com"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "subroute",
+         "routes": [
+          {
+           "match": [
+            {
+             "not": [
+              {
+               "remote_ip": {
+                "ranges": [
+                 "192.0.2.0/24",
+                 "2001:db8::/32"
+                ]
+               }
+              }
+             ]
+            }
+           ],
+           "handle": [
+            {
+             "handler": "static_response",
+             "status_code": 403
+            }
+           ]
+          },
+          {
+           "handle": [
+            {
+             "handler": "reverse_proxy",
+             "upstreams": [
+              {
+               "dial": "192.0.2.10:8080"
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ],
+       "terminal": true
+      },
+      {
+       "match": [
+        {
+         "host": [
+          "auth.example.com"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "subroute",
+         "routes": [
+          {
+           "handle": [
+            {
+             "handler": "authentication",
+             "providers": {
+              "http_basic": {
+               "accounts": [
+                {
+                 "username": "u",
+                 "password": "HASH"
+                }
+               ],
+               "hash": {
+                "algorithm": "bcrypt"
+               }
+              }
+             }
+            },
+            {
+             "handler": "headers",
+             "response": {
+              "set": {
+               "X-Frame-Options": [
+                "DENY"
+               ]
+              }
+             }
+            },
+            {
+             "handler": "reverse_proxy",
+             "upstreams": [
+              {
+               "dial": "192.0.2.11:3000"
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ],
+       "terminal": true
+      },
+      {
+       "match": [
+        {
+         "host": [
+          "sso.example.com"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "subroute",
+         "routes": [
+          {
+           "handle": [
+            {
+             "handler": "reverse_proxy",
+             "upstreams": [
+              {
+               "dial": "authelia.example.net:9091"
+              }
+             ],
+             "rewrite": {
+              "method": "GET",
+              "uri": "/api/authz/forward-auth"
+             },
+             "handle_response": [
+              {
+               "match": {
+                "status_code": [
+                 2
+                ]
+               },
+               "routes": [
+                {
+                 "handle": [
+                  {
+                   "handler": "headers",
+                   "request": {
+                    "set": {
+                     "Remote-User": [
+                      "{http.reverse_proxy.header.Remote-User}"
+                     ]
+                    }
+                   }
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            },
+            {
+             "handler": "reverse_proxy",
+             "upstreams": [
+              {
+               "dial": "192.0.2.12:80"
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ],
+       "terminal": true
+      },
+      {
+       "match": [
+        {
+         "host": [
+          "*.example.com"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "reverse_proxy",
+         "upstreams": [
+          {
+           "dial": "192.0.2.13:80"
+          }
+         ]
+        }
+       ],
+       "terminal": true
+      },
+      {
+       "match": [
+        {
+         "host": [
+          "old.example.com"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "static_response",
+         "status_code": 308,
+         "headers": {
+          "Location": [
+           "https://app.example.com{http.request.uri}"
+          ]
+         }
+        }
+       ],
+       "terminal": true
+      },
+      {
+       "match": [
+        {
+         "host": [
+          "lan.example.com"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "subroute",
+         "routes": [
+          {
+           "match": [
+            {
+             "remote_ip": {
+              "ranges": [
+               "198.51.100.0/24"
+              ]
+             }
+            }
+           ],
+           "handle": [
+            {
+             "handler": "static_response",
+             "abort": true
+            }
+           ]
+          },
+          {
+           "handle": [
+            {
+             "handler": "reverse_proxy",
+             "upstreams": [
+              {
+               "dial": "192.0.2.14:80"
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ],
+       "terminal": true
+      },
+      {
+       "match": [
+        {
+         "host": [
+          "rl.example.com"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "subroute",
+         "routes": [
+          {
+           "handle": [
+            {
+             "handler": "rate_limit",
+             "rate_limits": {
+              "a": {
+               "max_events": 10,
+               "window": "1m"
+              }
+             }
+            },
+            {
+             "handler": "reverse_proxy",
+             "upstreams": [
+              {
+               "dial": "192.0.2.15:80"
+              }
+             ],
+             "transport": {
+              "protocol": "http",
+              "tls": {}
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ],
+       "terminal": true
+      },
+      {
+       "match": [
+        {
+         "host": [
+          "php.example.com"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "reverse_proxy",
+         "upstreams": [
+          {
+           "dial": "192.0.2.16:9000"
+          }
+         ],
+         "transport": {
+          "protocol": "fastcgi"
+         }
+        }
+       ],
+       "terminal": true
+      },
+      {
+       "match": [
+        {
+         "host": [
+          "multi.example.com"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "subroute",
+         "routes": [
+          {
+           "match": [
+            {
+             "path": [
+              "/api/*"
+             ]
+            }
+           ],
+           "handle": [
+            {
+             "handler": "reverse_proxy",
+             "upstreams": [
+              {
+               "dial": "192.0.2.17:8000"
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "handle": [
+            {
+             "handler": "reverse_proxy",
+             "upstreams": [
+              {
+               "dial": "192.0.2.18:8001"
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ],
+       "terminal": true
+      },
+      {
+       "handle": [
+        {
+         "handler": "static_response",
+         "body": "ok"
+        }
+       ]
+      }
+     ]
+    },
+    "srv1": {
+     "listen": [
+      ":80"
+     ],
+     "automatic_https": {
+      "disable": true
+     },
+     "routes": [
+      {
+       "match": [
+        {
+         "host": [
+          "plain.example.com"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "file_server",
+         "root": "/srv"
+        }
+       ],
+       "terminal": true
+      }
+     ]
+    },
+    "srv2": {
+     "listen": [
+      "tcp/127.0.0.1:8443-8444",
+      "udp/:8443"
+     ],
+     "tls_connection_policies": [
+      {}
+     ],
+     "routes": [
+      {
+       "match": [
+        {
+         "host": [
+          "internal.example.net"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "reverse_proxy",
+         "upstreams": [
+          {
+           "dial": "192.0.2.20:80"
+          }
+         ]
+        }
+       ],
+       "terminal": true
+      }
+     ]
+    },
+    "srv3": {
+     "listen": [
+      ":8080"
+     ],
+     "automatic_https": {
+      "skip": [
+       "skip.example.org"
+      ]
+     },
+     "routes": [
+      {
+       "match": [
+        {
+         "host": [
+          "skip.example.org"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "reverse_proxy",
+         "upstreams": [
+          {
+           "dial": "192.0.2.21:80"
+          }
+         ]
+        }
+       ],
+       "terminal": true
+      },
+      {
+       "match": [
+        {
+         "host": [
+          "203.0.113.5"
+         ]
+        }
+       ],
+       "handle": [
+        {
+         "handler": "reverse_proxy",
+         "upstreams": [
+          {
+           "dial": "192.0.2.22:80"
+          }
+         ]
+        }
+       ],
+       "terminal": true
+      }
+     ]
+    }
+   }
+  }
+ }
+}

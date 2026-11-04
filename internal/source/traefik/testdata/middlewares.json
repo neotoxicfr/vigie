@@ -1,0 +1,11 @@
+[
+ {"name":"crowdsec@file","provider":"file","type":"bouncer","status":"enabled","plugin":{"bouncer":{"crowdsecLapiKeyFile":"/run/secrets/key"}}},
+ {"name":"admin-chain@file","provider":"file","type":"chain","status":"enabled","chain":{"middlewares":["sec-headers","ipallow@file","auth"]}},
+ {"name":"public-chain@file","provider":"file","type":"chain","status":"enabled","chain":{"middlewares":["sec-headers"]}},
+ {"name":"sec-headers@file","provider":"file","type":"headers","status":"enabled","headers":{"stsSeconds":31536000,"contentTypeNosniff":true}},
+ {"name":"ipallow@file","provider":"file","type":"ipallowlist","status":"enabled","ipAllowList":{"sourceRange":["192.0.2.0/24","2001:db8::/32","198.51.100.7","pas-une-ip"],"ipStrategy":{}}},
+ {"name":"auth@file","provider":"file","type":"forwardauth","status":"enabled","forwardAuth":{"address":"http://auth:9091/api/authz/forward-auth","trustForwardHeader":true}},
+ {"name":"www@docker","provider":"docker","type":"redirectregex","status":"enabled","redirectRegex":{"regex":"^https://example.com/(.*)","replacement":"https://www.example.com/${1}"}},
+ {"name":"loop@file","provider":"file","type":"chain","status":"enabled","chain":{"middlewares":["loop2"]}},
+ {"name":"loop2@file","provider":"file","type":"chain","status":"enabled","chain":{"middlewares":["loop@file"]}}
+]

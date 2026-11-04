@@ -1,0 +1,4 @@
+[
+ {"name":"web","address":":80","http":{"redirections":{"entryPoint":{"to":"websecure","scheme":"https"}}}},
+ {"name":"websecure","address":":443","http":{"middlewares":["crowdsec@file"]}}
+]

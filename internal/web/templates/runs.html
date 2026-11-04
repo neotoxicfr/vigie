@@ -1,0 +1,21 @@
+{{define "content"}}{{$runs := .Data}}
+{{if $runs}}
+<div class="table-wrap">
+<table class="runs">
+  <thead><tr><th scope="col">Quand</th><th scope="col">Type</th><th scope="col">Durée</th><th scope="col">Statut</th><th scope="col" class="num">Écarts ouverts</th><th scope="col"><span class="sr">Export</span></th></tr></thead>
+  <tbody>
+  {{range $runs}}
+  <tr>
+    <td><a href="/issues?passage={{ref .Started}}&etat=tout">{{when .Started}}</a> <span class="muted small">{{ago .Started}}</span></td>
+    <td>{{if .Scope}}re-test <span class="mono">{{.Scope}}</span>{{else}}complet{{end}}</td>
+    <td class="muted">{{since .Started .Finished}}</td>
+    <td><span class="status st-{{.Status}}">{{.Status}}</span>{{if .Note}}<span class="note small muted">{{.Note}}</span>{{end}}</td>
+    <td class="num">{{.Issues}}</td>
+    <td><a class="ghost icon" href="/runs/{{ref .Started}}/export.json" title="Export JSON" aria-label="Export JSON du passage du {{when .Started}}">{{template "ic" "download"}}</a></td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+{{else}}<div class="empty">{{template "ic" "clock"}}<p>Aucun passage pour l'instant.</p></div>{{end}}
+{{end}}

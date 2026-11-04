@@ -1,0 +1,22 @@
+{{define "content"}}{{$hs := .Data}}
+{{if $hs}}
+<div class="table-wrap">
+<table class="hosts">
+  <thead><tr><th scope="col" class="c-grade">Note</th><th scope="col">Hôte</th><th scope="col" class="num">Élevés</th><th scope="col" class="num">Moyens</th><th scope="col" class="num">Faibles</th><th scope="col" class="c-trend">Tendance</th><th scope="col"><span class="sr">État</span></th></tr></thead>
+  <tbody>
+  {{range $hs}}
+  <tr data-href="/host/{{.Host}}">
+    <td class="c-grade"><span class="g g-{{.Grade}}" title="score {{.Score}}/100">{{.Grade}}</span></td>
+    <td><a class="row-link mono" href="/host/{{.Host}}">{{.Host}}</a></td>
+    <td class="num">{{with index .Open 3}}<span class="sev sev-3"><span class="dot"></span>{{.}}</span>{{else}}<span class="muted">·</span>{{end}}</td>
+    <td class="num">{{with index .Open 2}}<span class="sev sev-2"><span class="dot"></span>{{.}}</span>{{else}}<span class="muted">·</span>{{end}}</td>
+    <td class="num">{{with index .Open 1}}<span class="sev sev-1"><span class="dot"></span>{{.}}</span>{{else}}<span class="muted">·</span>{{end}}</td>
+    <td class="c-trend">{{spark .Trend 120 26}}</td>
+    <td>{{if .New}}<span class="tag tag-new">{{.New}} nouv.</span>{{end}}</td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+{{else}}<div class="empty">{{template "ic" "server"}}<p>Aucun hôte : lance un passage.</p></div>{{end}}
+{{end}}

@@ -1,0 +1,67 @@
+{{define "content"}}{{template "issuedetail" .}}{{end}}
+{{define "panel"}}{{template "issuedetail" .}}{{end}}
+{{define "issuedetail"}}{{$d := .Data}}{{$r := $d.Row}}
+<article class="detail">
+  <header class="detail-head">
+    <div class="detail-meta">{{template "sev" $r.Severity}} {{template "state" $r}} {{if $r.Privileged}}<span class="tag tag-priv" title="vigie passe des contrôles d'accès qu'un inconnu ne passerait pas">{{template "ic" "shield"}}point de vue privilégié</span>{{end}}</div>
+    <h2>{{$r.Title}}</h2>
+    <p class="mono muted"><a href="/host/{{$r.Host}}">{{$r.Target}}</a> · {{$r.Check}}</p>
+  </header>
+
+  <section>
+    <h3>Vu depuis</h3>
+    <ul class="vlist">
+      {{range $r.Vantages}}
+      <li><span class="vchip {{vclass .Name}}{{if eq .State "résolu"}} gone{{end}}">{{vlabel .Name}}</span>
+        <span class="small muted">{{.State}}{{if .Privileged}} · privilégié{{end}}</span>
+        {{if .Evidence}}<pre class="evidence">{{.Evidence}}</pre>{{end}}</li>
+      {{end}}
+    </ul>
+  </section>
+
+  {{if $d.HasKB}}
+  <section>
+    <h3>Pourquoi c'est un risque</h3>
+    <p>{{$d.KB.Risk}}</p>
+    {{if $d.Fixes}}
+    <h3>Correctif</h3>
+    <div class="fixes" data-tabs>
+      <div class="fix-tabs" role="tablist">{{range $i, $f := $d.Fixes}}<button type="button" role="tab" data-tab="{{$i}}" title="{{$f.Label}}" {{if eq $f.Proxy $d.Proxy}}data-default{{end}}>{{$f.Tab}}</button>{{end}}</div>
+      {{range $i, $f := $d.Fixes}}
+      <div class="fix" role="tabpanel" data-panel="{{$i}}">
+        <p class="small muted">{{$f.Label}}</p>
+        <div class="code"><button type="button" class="ghost copy" data-copy aria-label="Copier">{{template "ic" "copy"}}</button><pre><code>{{$f.Code}}</code></pre></div>
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+    {{if $d.KB.Refs}}<p class="small">{{range $d.KB.Refs}}<a href="{{.}}" rel="noreferrer noopener" target="_blank">{{.}}</a> {{end}}</p>{{end}}
+  </section>
+  {{end}}
+
+  {{with $d.Route}}
+  <section>
+    <h3>Chaîne de la route <span class="mono muted small">{{.Name}}</span></h3>
+    <p class="chain">{{range .Middlewares}}<span class="mw kind-{{.Kind}}" title="{{.Type}}">{{.Name}}</span>{{else}}<span class="muted">aucun middleware</span>{{end}}</p>
+  </section>
+  {{end}}
+
+  <section class="actions">
+    {{if $r.Accepted}}
+      <p class="small">Assumé{{if $r.Excluded}} <b>partout</b>{{end}} par {{$r.Accepted.Author}} {{if not $r.Accepted.At.IsZero}}le {{when $r.Accepted.At}}{{end}} : « {{$r.Accepted.Note}} »</p>
+      <form method="post" action="/unaccept">
+        <input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="back" value="/issues">
+        {{if $r.Excluded}}<input type="hidden" name="check" value="{{$r.Check}}">{{else}}<input type="hidden" name="key" value="{{$r.Key}}">{{end}}
+        <button type="submit" class="secondary">{{if $r.Excluded}}Réactiver ce contrôle{{else}}Ne plus assumer{{end}}</button>
+      </form>
+    {{else if ne $r.State "résolu"}}
+      {{template "accept" (dict "CSRF" .CSRF "Key" $r.Key "Check" $r.Check "Target" $r.Target "Back" "/issues")}}
+      {{if $d.Others}}<p class="small muted">Le même contrôle touche {{$d.Others}} autre(s) hôte(s) : <a href="/problems">vue par problème</a>.</p>{{end}}
+    {{end}}
+    <form method="post" action="/retest">
+      <input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="host" value="{{$r.Host}}"><input type="hidden" name="back" value="/host/{{$r.Host}}">
+      <button type="submit" class="secondary">{{template "ic" "refresh"}}Re-tester {{$r.Host}}</button>
+    </form>
+  </section>
+</article>
+{{end}}

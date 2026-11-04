@@ -1,0 +1,67 @@
+{{define "sev"}}<span class="sev {{sevclass .}}"><span class="dot"></span>{{.}}</span>{{end}}
+
+{{define "vchips"}}<span class="vchips">{{range .}}<span class="vchip {{vclass .Name}}{{if eq .State "résolu"}} gone{{end}}{{if .Privileged}} priv{{end}}" title="{{vlabel .Name}}{{if eq .State "résolu"}} : résolu{{end}}{{if .Privileged}} · point de vue privilégié{{end}}">{{vlabel .Name}}</span>{{end}}</span>{{end}}
+
+{{define "state"}}{{if .Accepted}}<span class="tag tag-ok" title="{{.Accepted.Note}}">assumé</span>{{else if eq .State "nouveau"}}<span class="tag tag-new">nouveau</span>{{else if eq .State "résolu"}}<span class="tag tag-ok">résolu</span>{{else if .Carried}}<span class="tag" title="Pas re-mesuré par ce passage">repris</span>{{end}}{{end}}
+
+{{define "filters"}}
+<form method="get" class="filters" data-autosubmit aria-label="Filtres">
+  {{if .F.Tab}}<input type="hidden" name="etat" value="{{.F.Tab}}">{{end}}
+  {{if .F.Run}}<input type="hidden" name="passage" value="{{.F.Ref}}">{{end}}
+  <fieldset class="seg">
+    <legend>Sévérité</legend>
+    <label class="chk sev-3"><input type="checkbox" name="sev" value="3" {{if index .F.Sev 3}}checked{{end}}><span>élevé</span></label>
+    <label class="chk sev-2"><input type="checkbox" name="sev" value="2" {{if index .F.Sev 2}}checked{{end}}><span>moyen</span></label>
+    <label class="chk sev-1"><input type="checkbox" name="sev" value="1" {{if index .F.Sev 1}}checked{{end}}><span>faible</span></label>
+    <label class="chk sev-0"><input type="checkbox" name="sev" value="0" {{if index .F.Sev 0}}checked{{end}}><span>info</span></label>
+  </fieldset>
+  {{if .Vantages}}<fieldset class="seg">
+    <legend>Point de vue</legend>
+    {{$f := .F}}{{range .Vantages}}<label class="chk {{vclass .}}"><input type="checkbox" name="vue" value="{{.}}" {{if index $f.Vue .}}checked{{end}}><span>{{vlabel .}}</span></label>{{end}}
+  </fieldset>{{end}}
+  <label class="search"><span class="sr">Rechercher</span><input type="search" name="q" value="{{.F.Q}}" placeholder="Filtrer : hôte, contrôle, titre…" autocomplete="off"></label>
+  <noscript><button type="submit" class="secondary">Filtrer</button></noscript>
+</form>
+{{end}}
+
+{{define "tabs"}}<nav class="tabs" aria-label="États">{{range .}}<a href="{{.URL}}" {{if .Current}}aria-current="page"{{end}}>{{.Label}}<span class="count">{{.Count}}</span></a>{{end}}</nav>{{end}}
+
+{{define "issuetable"}}
+{{if .Rows}}
+<div class="table-wrap">
+<table class="issues">
+  <thead><tr><th scope="col" class="c-sev">Sévérité</th><th scope="col">Écart</th><th scope="col" class="c-host">Cible</th><th scope="col" class="c-v">Vu depuis</th><th scope="col" class="c-st"><span class="sr">État</span></th></tr></thead>
+  <tbody>
+  {{$run := .F.Ref}}
+  {{range .Rows}}
+  <tr data-href="/issue/{{.Key}}{{if $run}}?passage={{$run}}{{end}}">
+    <td class="c-sev">{{template "sev" .Severity}}</td>
+    <td><a class="row-link" href="/issue/{{.Key}}{{if $run}}?passage={{$run}}{{end}}">{{.Title}}</a><span class="check">{{.Check}}</span></td>
+    <td class="c-host mono">{{.Target}}</td>
+    <td class="c-v">{{template "vchips" .Vantages}}</td>
+    <td class="c-st">{{template "state" .}}</td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+{{else}}
+<div class="empty">{{template "ic" "check"}}<p>Aucun écart ne correspond.</p></div>
+{{end}}
+{{end}}
+
+{{define "accept"}}
+<details class="accept">
+  <summary class="button secondary">Assumer…</summary>
+  <form method="post" action="/accept" class="stack">
+    <input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="key" value="{{.Key}}"><input type="hidden" name="check" value="{{.Check}}"><input type="hidden" name="back" value="{{.Back}}">
+    <fieldset class="radio">
+      <legend>Portée</legend>
+      <label><input type="radio" name="scope" value="host" checked> <span><b>Cet hôte</b> : seulement <code>{{.Target}}</code></span></label>
+      <label><input type="radio" name="scope" value="global"> <span><b>Partout</b> : ce contrôle n'est plus enregistré (réactivable dans Réglages)</span></label>
+    </fieldset>
+    <label>Raison <input name="note" required maxlength="500" placeholder="ex. CSP imposée par l'application"></label>
+    <button type="submit">Assumer</button>
+  </form>
+</details>
+{{end}}

@@ -1,0 +1,47 @@
+{{define "content"}}{{$d := .Data}}{{$csrf := .CSRF}}
+<div class="cols">
+  <section class="panel">
+    <div class="panel-head"><h2>Sources</h2><a class="more" href="/settings#sources">Régler {{template "ic" "arrow"}}</a></div>
+    <ul class="plain pad">{{range $d.Sources}}<li class="mono">{{.}}</li>{{end}}</ul>
+    {{if $d.Tested}}
+    <ul class="plain pad">{{range $d.Tested}}<li>{{if .Err}}<span class="tag tag-new">échec</span> <span class="mono">{{.Name}}</span> <span class="small muted">{{.Err}}</span>{{else}}<span class="tag tag-ok">ok</span> <span class="mono">{{.Name}}</span> · {{.Routes}} route(s){{end}}</li>{{end}}</ul>
+    {{end}}
+    <form method="post" action="/sources/test" class="pad"><input type="hidden" name="csrf" value="{{$csrf}}"><button type="submit" class="secondary">Tester les sources</button></form>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Cibles ajoutées à la main</h2></div>
+    <form method="post" action="/targets" class="inline pad">
+      <input type="hidden" name="csrf" value="{{$csrf}}">
+      <label class="grow">Hôte ou IP <input name="host" required placeholder="app.example.com" autocapitalize="off" spellcheck="false"></label>
+      <label>Ports <input name="ports" placeholder="443, 22" inputmode="numeric"></label>
+      <label class="grow">Note <input name="note" maxlength="200"></label>
+      <button type="submit">Ajouter</button>
+    </form>
+    {{if $d.Targets}}
+    <table class="plain-t">
+      <tbody>{{range $d.Targets}}<tr><td class="mono">{{.Host}}</td><td class="mono muted">{{range $i, $p := .Ports}}{{if $i}}, {{end}}{{$p}}{{else}}443, 80{{end}}</td><td class="muted">{{.Note}}</td><td class="num"><form method="post" action="/targets/{{.ID}}/delete"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="ghost danger" type="submit" aria-label="Retirer {{.Host}}">Retirer</button></form></td></tr>{{end}}</tbody>
+    </table>
+    {{end}}
+  </section>
+</div>
+<section class="panel">
+  <div class="panel-head"><h2>Routes découvertes</h2><span class="muted small">{{len $d.Routes}} route(s), dernier passage complet</span></div>
+  {{if $d.Routes}}
+  <div class="table-wrap">
+  <table class="routes">
+    <thead><tr><th scope="col">Route</th><th scope="col">Hôtes</th><th scope="col">Ports</th><th scope="col">Chaîne appliquée</th></tr></thead>
+    <tbody>
+    {{range $d.Routes}}
+    <tr>
+      <td><span class="mono">{{.Name}}</span><span class="check">{{.Source}}</span>{{range .Problems}}<span class="check warn">{{.}}</span>{{end}}</td>
+      <td class="mono nowrap">{{range .Hosts}}<a href="/host/{{.}}">{{.}}</a><br>{{else}}—{{end}}{{range .Paths}}<span class="muted">{{.}}</span><br>{{end}}</td>
+      <td class="mono">{{range $i, $p := .Ports}}{{if $i}}, {{end}}{{$p}}{{end}}</td>
+      <td class="chain">{{range .Middlewares}}<span class="mw kind-{{.Kind}}" title="{{.Type}}">{{.Name}}</span>{{else}}<span class="muted">aucune</span>{{end}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}<p class="muted pad">Pas encore d'inventaire : lance un passage.</p>{{end}}
+</section>
+{{end}}
