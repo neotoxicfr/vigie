@@ -1,12 +1,12 @@
 module github.com/neotoxicfr/vigie
 
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/anthropics/anthropic-sdk-go v1.84.0
 	github.com/miekg/dns v1.1.73
 	github.com/modelcontextprotocol/go-sdk v1.8.0
-	github.com/projectdiscovery/wappalyzergo v0.3.8
+	github.com/projectdiscovery/wappalyzergo v0.3.9
 	github.com/quic-go/quic-go v0.65.0
 	github.com/tufanbarisyildirim/gonginx v0.0.0-20260220081509-8e17ce617db3
 	github.com/yuin/goldmark v1.8.7
@@ -15,7 +15,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/crypto v0.58.0
 	golang.org/x/net v0.62.0
-	modernc.org/sqlite v1.61.1
+	modernc.org/sqlite v1.62.0
 )
 
 require (
@@ -53,7 +53,7 @@ require (
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	modernc.org/libc v1.79.0 // indirect
+	modernc.org/libc v1.80.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 )
