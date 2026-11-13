@@ -1,0 +1,50 @@
+name: Revue CodeRabbit
+
+# Contrôle obligatoire « revue CodeRabbit » sur dev : posé sur le commit de tête seulement quand
+# coderabbitai[bot] y a publié une vraie revue. Revue sautée (quota, siège, erreur) : pas de statut,
+# la PR reste ouverte ; la relance programmée redemande la revue une seule fois par PR.
+on:
+  pull_request_review:
+    types: [submitted]
+  schedule:
+    - cron: '41 */3 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  statut:
+    if: github.event_name == 'pull_request_review' && github.event.review.user.login == 'coderabbitai[bot]' && github.event.review.commit_id == github.event.pull_request.head.sha
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA" -f state=success \
+            -f context="revue CodeRabbit" -f description="Revue publiée par CodeRabbit sur ce commit"
+
+  relance:
+    if: github.event_name != 'pull_request_review'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - run: |
+          marque='<!-- vigie:relance-coderabbit -->'
+          gh pr list --base dev --state open --json number,headRefOid,createdAt,isDraft \
+            --jq '.[] | select(.isDraft | not) | select((now - (.createdAt | fromdateiso8601)) > 3600) | "\(.number) \(.headRefOid)"' |
+          while read -r n sha; do
+            ok=$(gh api "repos/$GH_REPO/commits/$sha/status" --jq '[.statuses[] | select(.context == "revue CodeRabbit" and .state == "success")] | length')
+            [ "$ok" -gt 0 ] && continue
+            deja=$(gh api "repos/$GH_REPO/issues/$n/comments" --jq "[.[] | select(.body | contains(\"$marque\"))] | length")
+            [ "$deja" -gt 0 ] && continue
+            gh pr comment "$n" --body "@coderabbitai review
+          $marque"
+          done
