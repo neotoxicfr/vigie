@@ -1,10 +1,12 @@
 version: 2
 # Tout arrive sur dev (fusion automatique si les contrôles passent) ; main ne bouge qu'aux releases.
-# Mineures et correctifs groupés par écosystème ; une majeure garde sa propre PR.
+# Mineures et correctifs groupés par écosystème ; une majeure garde sa propre PR. Aucun délai de publication.
 updates:
   - package-ecosystem: gomod
     directory: /
     target-branch: dev
+    cooldown:
+      exclude: ["*"]   # aucun délai (Dependabot en applique 3 jours par défaut)
     schedule:
       interval: daily
     groups:
@@ -16,6 +18,8 @@ updates:
   - package-ecosystem: docker
     directory: /
     target-branch: dev
+    cooldown:
+      exclude: ["*"]   # aucun délai (Dependabot en applique 3 jours par défaut)
     schedule:
       interval: daily
     groups:
@@ -27,6 +31,8 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     target-branch: dev
+    cooldown:
+      exclude: ["*"]   # aucun délai (Dependabot en applique 3 jours par défaut)
     schedule:
       interval: daily
     groups:

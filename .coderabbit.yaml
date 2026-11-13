@@ -8,6 +8,7 @@ reviews:
   # Jamais d'approbation ni de demande de changements automatique.
   auto_approvals:
     enabled: false
+  commit_status: true      # contrôle obligatoire sur dev : la fusion automatique attend la revue
   high_level_summary: true
   collapse_walkthrough: true
   poem: false
@@ -24,8 +25,7 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
-    base_branches: ["main", "dev"]
-    ignore_usernames: ["dependabot[bot]"]   # la CI décide pour les PR de bots
+    base_branches: ["main", "dev"]   # toutes les PR, Dependabot comprises
 
   path_filters:
     - "!go.sum"
