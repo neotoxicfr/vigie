@@ -55,7 +55,9 @@ jobs:
           [ "$rc" -eq 3 ] && found=true
           grep -qE 'Total: [1-9]' trivy.txt && found=true
           title="Vulnérabilité à corriger"
-          num=$(gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')
+          # Seulement l'issue ouverte par cette veille (auteur GitHub Actions, titre exact) : jamais celle d'un tiers.
+          num=$(gh issue list --state open --author "app/github-actions" --limit 100 --json number,title \
+            --jq "[.[] | select(.title == \"$title\")][0].number // empty")
           if $found; then
             { echo "Détecté sur \`dev\` par la veille quotidienne. Corriger sur dev, puis décider d'une release."
               echo; echo '### govulncheck'; echo '```'; tail -c 30000 govuln.txt; echo '```'
