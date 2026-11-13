@@ -19,6 +19,8 @@ reviews:
       mode: "off"           # Go commenté au besoin, pas de seuil de couverture de commentaires
     issue_assessment:
       mode: "off"
+    description:
+      mode: "off"           # les PR Dependabot ne remplissent pas le modèle de PR : alerte à chaque fois
   auto_review:
     enabled: true
     drafts: false
