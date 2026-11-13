@@ -1,0 +1,30 @@
+name: Fusion automatique
+
+# PR vers dev de Dependabot ou du propriétaire : fusion dès que les contrôles obligatoires de dev sont verts.
+# Mise à jour de sécurité Dependabot (elle vise toujours main) : ramenée sur dev d'abord. Jamais de fusion auto sur main.
+# Aucun code de la PR n'est extrait ni exécuté ici.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions: {}
+
+jobs:
+  auto:
+    if: >-
+      !github.event.pull_request.draft &&
+      (github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == github.repository_owner) &&
+      (github.event.pull_request.base.ref == 'dev' ||
+       (github.event.pull_request.base.ref == 'main' && github.event.pull_request.user.login == 'dependabot[bot]'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.pull_request.html_url }}
+      BASE: ${{ github.event.pull_request.base.ref }}
+    steps:
+      - if: env.BASE == 'main'
+        run: gh pr edit "$PR" --base dev
+      - run: gh pr merge "$PR" --auto --squash

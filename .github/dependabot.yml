@@ -1,31 +1,36 @@
 version: 2
+# Tout arrive sur dev (fusion automatique si les contrôles passent) ; main ne bouge qu'aux releases.
+# Mineures et correctifs groupés par écosystème ; une majeure garde sa propre PR.
 updates:
   - package-ecosystem: gomod
     directory: /
+    target-branch: dev
     schedule:
       interval: daily
     groups:
       go:
-        patterns: ["*"]
+        update-types: [minor, patch]
     commit-message:
       prefix: build(deps)
 
   - package-ecosystem: docker
     directory: /
+    target-branch: dev
     schedule:
       interval: daily
     groups:
       docker:
-        patterns: ["*"]
+        update-types: [minor, patch]
     commit-message:
       prefix: build(docker)
 
   - package-ecosystem: github-actions
     directory: /
+    target-branch: dev
     schedule:
       interval: daily
     groups:
       actions:
-        patterns: ["*"]
+        update-types: [minor, patch]
     commit-message:
       prefix: ci

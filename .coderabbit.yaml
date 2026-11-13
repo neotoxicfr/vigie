@@ -24,8 +24,8 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
-    base_branches: ["main"]  # branche par défaut ; le projet n'a pas de branche de développement
-    # Les PR Dependabot sont relues comme les autres (aucun auteur ignoré).
+    base_branches: ["main", "dev"]
+    ignore_usernames: ["dependabot[bot]"]   # la CI décide pour les PR de bots
 
   path_filters:
     - "!go.sum"

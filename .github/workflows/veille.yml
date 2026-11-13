@@ -1,0 +1,66 @@
+name: Veille des vulnérabilités
+
+# Chaque jour sur dev : govulncheck et Trivy. Rien n'échoue (pas de mail quotidien) : une seule issue
+# « Vulnérabilité à corriger » est ouverte ou mise à jour, et refermée quand plus rien n'est détecté.
+on:
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: veille
+  cancel-in-progress: true
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: dev
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          output: trivy.txt
+          exit-code: '0'
+      - name: Issue unique
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set +e
+          go run golang.org/x/vuln/cmd/govulncheck@latest ./... > govuln.txt 2>&1
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 3 ]; then
+            echo "::warning::govulncheck n'a pas pu tourner (code $rc) : rien n'est changé aujourd'hui"
+            exit 0
+          fi
+          found=false
+          [ "$rc" -eq 3 ] && found=true
+          grep -qE 'Total: [1-9]' trivy.txt && found=true
+          title="Vulnérabilité à corriger"
+          num=$(gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')
+          if $found; then
+            { echo "Détecté sur \`dev\` par la veille quotidienne. Corriger sur dev, puis décider d'une release."
+              echo; echo '### govulncheck'; echo '```'; tail -c 30000 govuln.txt; echo '```'
+              echo; echo '### Trivy (arbre)'; echo '```'; tail -c 20000 trivy.txt; echo '```'; } > body.md
+            if [ -n "$num" ]; then gh issue edit "$num" --body-file body.md; else gh issue create --title "$title" --body-file body.md; fi
+          elif [ -n "$num" ]; then
+            gh issue close "$num" --comment "Plus rien de détecté sur dev : corrigé. Release à décider."
+          fi
