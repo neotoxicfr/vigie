@@ -1,0 +1,133 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Revue de PR par CodeRabbit : elle conseille ; la CI (scripts/ci.sh, ci.yml) et la personne qui fusionne décident.
+language: fr-FR
+tone_instructions: "Français, concis et factuel. Cite fichier et ligne, propose un correctif précis ; pas de compliments."
+
+reviews:
+  profile: chill
+  # Jamais d'approbation ni de demande de changements automatique.
+  auto_approvals:
+    enabled: false
+  high_level_summary: true
+  collapse_walkthrough: true
+  poem: false
+  in_progress_fortune: false
+  sequence_diagrams: false
+  suggested_reviewers: false
+  pre_merge_checks:
+    docstrings:
+      mode: "off"           # Go commenté au besoin, pas de seuil de couverture de commentaires
+    issue_assessment:
+      mode: "off"
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches: ["main"]  # branche par défaut ; le projet n'a pas de branche de développement
+    # Les PR Dependabot sont relues comme les autres (aucun auteur ignoré).
+
+  path_filters:
+    - "!go.sum"
+    - "!LICENSE-*"
+    - "!internal/netinfo/cdn/*.txt"   # plages publiées par les CDN, recopiées telles quelles
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!**/*.webp"
+    - "!**/*.ico"
+    - "!internal/web/static/icon.svg"
+    - "!dist/**"
+    - "!vigie"
+
+  path_instructions:
+    - path: "**"
+      instructions: |
+        Règles du projet, à faire respecter :
+        - Outil générique et auto-hébergé : rien de spécifique à une infrastructure précise ; tout vient de la
+          configuration ou de l'interface.
+        - Fichiers publics : aucun secret, jeton, e-mail personnel, domaine réel ni adresse IP réelle. Exemples
+          avec example.com et les plages de documentation (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24, 2001:db8::/32).
+        - Secrets uniquement en fichiers (/run/secrets/<nom>), jamais dans la configuration ni dans un message d'erreur ou un journal.
+        - Commentaires, messages et textes d'interface en français ; messages de commit en anglais (conventional commits).
+        Déjà tranché, à ne pas re-signaler :
+        - Politique « toujours latest » : directive go du go.mod à la dernière version stable, image golang:latest,
+          dépendances à leur dernière version. Ne pas proposer d'épingler une version en retrait.
+        - GO-2026-5932 (golang.org/x/crypto/openpgp) : non atteignable, seul x/crypto/argon2 est importé.
+        - Ne pas proposer de poser une CSP par le reverse proxy pour une application qui pose la sienne :
+          avec Traefik, l'en-tête du middleware remplace celui de l'application.
+    - path: "internal/**/*.go"
+      instructions: |
+        - Go natif, bibliothèque standard d'abord : aucun appel à un outil externe (exec), aucun service tiers
+          contacté hors des cibles auditées, du résolveur configuré et des API explicitement réglées (CDN, IA).
+        - Scans passifs ou légers : jamais de POST métier ni d'essai d'identifiants. Toute connexion vers une cible
+          passe par scan.Guard (concurrence par hôte, délai, budget, arrêt sur 429).
+        - Délai explicite sur tout client réseau ; corps de réponse bornés (io.LimitReader).
+        - Une logique nouvelle et non triviale arrive avec un test ; un correctif avec un test qui échoue sans lui.
+        - Constats : la preuve (Evidence) ne contient jamais de secret ; la clé d'un constat ne dépend pas de la preuve.
+    - path: "internal/web/**"
+      instructions: |
+        - CSP stricte posée par l'application : script-src 'self', aucun script ni gestionnaire d'événement en
+          ligne, aucun attribut style (la CSP l'interdit). Le JavaScript reste progressif : la page marche sans lui.
+        - html/template seulement ; aucun template.HTML construit à partir d'une donnée externe sans échappement.
+        - Toute route POST exige la session et le jeton CSRF. Seules exceptions : /login, /healthz, /static/,
+          /api/summary et /mcp (jeton porteur dédié comparé en temps constant).
+        - Un chemin de secret saisi dans l'interface reste confiné à /run/secrets/.
+        - Accessibilité WCAG 2.2 AA : libellés, focus visible, contrastes ; mise en page sans défilement horizontal sur mobile.
+    - path: "internal/ai/**"
+      instructions: |
+        - L'analyse IA est la seule sortie de données avec MCP : toujours à la demande, jamais la configuration brute ;
+          le masquage des hôtes et IP doit rester réversible et complet.
+        - Écarts assumés et contrôles exclus : donnés au modèle dans leur section, jamais mêlés aux écarts ouverts.
+    - path: ".github/workflows/**"
+      instructions: |
+        - Actions épinglées par SHA de commit (avec la version en commentaire), permissions minimales par tâche.
+        - Notes de release écrites à la main : jamais generate_release_notes ni --generate-notes.
+        - Tag git vX.Y.Z, étiquette d'image X.Y.Z sans « v ».
+    - path: "**/testdata/**"
+      instructions: "Données d'essai anonymisées : example.com et plages de documentation uniquement."
+
+  tools:
+    golangci-lint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    actionlint:
+      enabled: true
+    zizmor:
+      enabled: true
+    hadolint:
+      enabled: true
+    shellcheck:
+      enabled: true
+    yamllint:
+      enabled: true
+    markdownlint:
+      enabled: true
+    htmlhint:
+      enabled: true
+    stylelint:
+      enabled: true
+    # Doublons bruyants des contrôles existants : govulncheck (CI, conscient de l'atteignabilité), Dependabot,
+    # secret scanning GitHub. Les garder signalerait à chaque PR ce qui est déjà tranché.
+    osvScanner:
+      enabled: false
+    trivy:
+      enabled: false
+    trufflehog:
+      enabled: false
+    # Texte technique en français : trop de faux positifs.
+    languagetool:
+      enabled: false
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "SECURITY.md"
+      - "DESIGN.md"
+      - "PRODUCT.md"
+  learnings:
+    scope: local
+  pull_requests:
+    scope: local
