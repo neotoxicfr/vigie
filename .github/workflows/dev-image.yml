@@ -78,7 +78,8 @@ jobs:
             ghcr.io/${{ github.repository }}:dev
             ghcr.io/${{ github.repository }}:dev-${{ steps.sha.outputs.sha }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Après une CI de PR (workflow_run), le jeton n'a pas le droit d'écrire le cache : sans effet sur l'image.
+          cache-to: type=gha,mode=max,ignore-error=true
       - if: github.event_name == 'push' || steps.merged.outputs.ok == 'true'
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
