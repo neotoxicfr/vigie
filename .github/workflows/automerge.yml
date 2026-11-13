@@ -24,7 +24,10 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       PR: ${{ github.event.pull_request.html_url }}
       BASE: ${{ github.event.pull_request.base.ref }}
+      HEAD: ${{ github.event.pull_request.head.ref }}
     steps:
       - if: env.BASE == 'main'
         run: gh pr edit "$PR" --base dev
-      - run: gh pr merge "$PR" --auto --squash
+      # main → dev (synchronisation après une release) : commit de fusion, pour que dev contienne main.
+      - run: |
+          if [ "$HEAD" = main ]; then gh pr merge "$PR" --auto --merge; else gh pr merge "$PR" --auto --squash; fi
