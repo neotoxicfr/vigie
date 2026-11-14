@@ -13,12 +13,13 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: dev-image
-  cancel-in-progress: true
-
 jobs:
   image:
+    # Concurrence au niveau de la tâche : une exécution sautée (CI sans rapport avec dev) n'annule plus une
+    # publication en cours ; les publications passent l'une après l'autre, la plus récente construit la tête de dev.
+    concurrency:
+      group: dev-image
+      cancel-in-progress: false
     if: >-
       github.event_name == 'push' ||
       (github.event.workflow_run.conclusion == 'success' &&
