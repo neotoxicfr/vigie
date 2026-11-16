@@ -6,7 +6,7 @@ require (
 	github.com/anthropics/anthropic-sdk-go v1.84.0
 	github.com/miekg/dns v1.1.73
 	github.com/modelcontextprotocol/go-sdk v1.8.0
-	github.com/projectdiscovery/wappalyzergo v0.3.9
+	github.com/projectdiscovery/wappalyzergo v0.3.10
 	github.com/quic-go/quic-go v0.65.0
 	github.com/tufanbarisyildirim/gonginx v0.0.0-20260220081509-8e17ce617db3
 	github.com/yuin/goldmark v1.8.7
