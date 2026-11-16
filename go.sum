@@ -87,8 +87,8 @@ github.com/pb33f/ordered-map/v2 v2.3.1 h1:5319HDO0aw4DA4gzi+zv4FXU9UlSs3xGZ40wcP
 github.com/pb33f/ordered-map/v2 v2.3.1/go.mod h1:qxFQgd0PkVUtOMCkTapqotNgzRhMPL7VvaHKbd1HnmQ=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
 github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
-github.com/projectdiscovery/wappalyzergo v0.3.9 h1:XIS1KddJCFmoG7VQ7vBEyrF0n5CEIlwhmgPi2wrakrg=
-github.com/projectdiscovery/wappalyzergo v0.3.9/go.mod h1:7gTNIjQSXsVmFDJJ3PT8+FhYE+dv6hZLGZSsRAEjVSw=
+github.com/projectdiscovery/wappalyzergo v0.3.10 h1:y7pZ+oEM9AjZc/ywXhMU2UAC42bZ7O8eUYDbbTD1KQg=
+github.com/projectdiscovery/wappalyzergo v0.3.10/go.mod h1:v6ZGfobwbT6vXOt3Cjq/KZ6rio5CFwacX5o34rnnzQw=
 github.com/quic-go/go-ossfuzz-seeds v0.1.0 h1:APacT+iIaNF6fd8AGEiN3bT/Jtkd2jz4v4TzM7MFjy0=
 github.com/quic-go/go-ossfuzz-seeds v0.1.0/go.mod h1:3IOHRbJIc+L6YKMwfDtJAM9Vj9k0YY4muhuyUYk5tbk=
 github.com/quic-go/qpack v0.6.0 h1:g7W+BMYynC1LbYLSqRt8PBg5Tgwxn214ZZR34VIOjz8=
