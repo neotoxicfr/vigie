@@ -7,7 +7,7 @@ require (
 	github.com/miekg/dns v1.1.73
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/projectdiscovery/wappalyzergo v0.3.11
-	github.com/quic-go/quic-go v0.65.0
+	github.com/quic-go/quic-go v0.66.0
 	github.com/tufanbarisyildirim/gonginx v0.0.0-20260220081509-8e17ce617db3
 	github.com/yuin/goldmark v1.8.7
 	github.com/zmap/zcrypto v0.0.0-20261025225231-4cf7949d2321
