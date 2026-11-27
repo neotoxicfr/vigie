@@ -38,8 +38,12 @@ jobs:
           head=$(gh pr view "$N" --json author,baseRefName,headRefName,headRefOid,isDraft,state \
             --jq "select(.author.login == \"$OWNER\" and .baseRefName == \"dev\" and .headRefOid == \"$SHA\" and (.isDraft | not) and .state == \"OPEN\") | .headRefName")
           [ -z "$head" ] && { echo "PR #$N : rien à armer"; exit 0; }
-          # main → dev (synchronisation) : commit de fusion, pour que dev contienne main.
-          if [ "$head" = main ]; then gh pr merge "$N" --auto --merge; else gh pr merge "$N" --auto --squash; fi
+          # main → dev (synchronisation, ou branche sync/* quand elle demande une résolution de conflit) :
+          # commit de fusion, pour que dev contienne main.
+          case "$head" in
+            main|sync/*) gh pr merge "$N" --auto --merge ;;
+            *) gh pr merge "$N" --auto --squash ;;
+          esac
 
   relance:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
