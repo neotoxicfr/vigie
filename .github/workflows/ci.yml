@@ -35,9 +35,12 @@ jobs:
             exit 1
           fi
       - run: go vet ./...
+      - run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.2 ./...
       - run: go test -race ./...
       - name: govulncheck
         run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - name: osv-scanner
+        run: go run github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.7.1 scan source -r .
 
   docker:
     name: build de l'image (sans push)
@@ -95,6 +98,13 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
           skip-setup-trivy: true
+      # Le binaire de l'image entier, y compris ce que l'analyse des appels juge non atteint.
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: osv-scanner (image)
+        run: go run github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.7.1 scan image vigie:ci
 
   gitleaks:
     name: gitleaks
