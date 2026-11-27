@@ -1,8 +1,9 @@
 name: Fusion automatique
 
-# PR vers dev de Dependabot ou du propriétaire : fusion dès que les contrôles obligatoires de dev sont verts.
-# Mise à jour de sécurité Dependabot (elle vise toujours main) : ramenée sur dev d'abord. Jamais de fusion auto sur main.
-# Aucun code de la PR n'est extrait ni exécuté ici.
+# PR de Dependabot vers dev : fusion dès que les contrôles obligatoires sont verts (la CI suffit).
+# Ses mises à jour de sécurité, qui visent toujours main, sont ramenées sur dev d'abord.
+# PR du propriétaire : armée seulement par une vraie revue CodeRabbit (revue.yml) ; un nouveau commit la désarme.
+# Jamais de fusion automatique sur main. Aucun code de la PR n'est extrait ni exécuté ici.
 on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
@@ -10,12 +11,10 @@ on:
 permissions: {}
 
 jobs:
-  auto:
+  dependabot:
     if: >-
-      !github.event.pull_request.draft &&
-      (github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == github.repository_owner) &&
-      (github.event.pull_request.base.ref == 'dev' ||
-       (github.event.pull_request.base.ref == 'main' && github.event.pull_request.user.login == 'dependabot[bot]'))
+      !github.event.pull_request.draft && github.event.pull_request.user.login == 'dependabot[bot]' &&
+      (github.event.pull_request.base.ref == 'dev' || github.event.pull_request.base.ref == 'main')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -24,10 +23,20 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       PR: ${{ github.event.pull_request.html_url }}
       BASE: ${{ github.event.pull_request.base.ref }}
-      HEAD: ${{ github.event.pull_request.head.ref }}
     steps:
       - if: env.BASE == 'main'
         run: gh pr edit "$PR" --base dev
-      # main → dev (synchronisation après une release) : commit de fusion, pour que dev contienne main.
-      - run: |
-          if [ "$HEAD" = main ]; then gh pr merge "$PR" --auto --merge; else gh pr merge "$PR" --auto --squash; fi
+      - run: gh pr merge "$PR" --auto --squash
+
+  desarmer:
+    # Le nouveau commit n'est pas encore relu : la fusion attendra la prochaine revue.
+    if: github.event.action == 'synchronize' && github.event.pull_request.user.login == github.repository_owner && github.event.pull_request.auto_merge != null
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge "$PR" --disable-auto

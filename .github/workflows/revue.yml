@@ -1,11 +1,15 @@
 name: Revue CodeRabbit
 
-# Contrôle obligatoire « revue CodeRabbit » sur dev : posé sur le commit de tête seulement quand
-# coderabbitai[bot] y a publié une vraie revue. Revue sautée (quota, siège, erreur) : pas de statut,
-# la PR reste ouverte ; la relance programmée redemande la revue une seule fois par PR.
+# PR du propriétaire vers dev : la fusion automatique n'est armée que par une vraie revue CodeRabbit du commit
+# de tête : une revue publiée par coderabbitai[bot], ou son contrôle « CodeRabbit » conclu en success (une revue
+# sans remarque ne publie pas d'objet revue). Revue sautée (quota, siège, erreur : skipped, neutral, failure) :
+# rien n'est armé, la PR reste ouverte ; la relance programmée redemande la revue une seule fois par PR.
+# Dependabot n'est pas relu. check_run et schedule lisent ce fichier sur la branche par défaut.
 on:
   pull_request_review:
     types: [submitted]
+  check_run:
+    types: [completed]
   schedule:
     - cron: '41 */3 * * *'
   workflow_dispatch:
@@ -13,36 +17,50 @@ on:
 permissions: {}
 
 jobs:
-  statut:
-    if: github.event_name == 'pull_request_review' && github.event.review.user.login == 'coderabbitai[bot]' && github.event.review.commit_id == github.event.pull_request.head.sha
+  armer:
+    if: >-
+      (github.event_name == 'pull_request_review' && github.event.review.user.login == 'coderabbitai[bot]') ||
+      (github.event_name == 'check_run' && github.event.check_run.app.slug == 'coderabbitai' &&
+       github.event.check_run.conclusion == 'success' && github.event.check_run.pull_requests[0] != null)
     runs-on: ubuntu-latest
     permissions:
-      statuses: write
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      OWNER: ${{ github.repository_owner }}
+      N: ${{ github.event.pull_request.number || github.event.check_run.pull_requests[0].number }}
+      SHA: ${{ github.event.review.commit_id || github.event.check_run.head_sha }}
     steps:
-      - env:
-          GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA" -f state=success \
-            -f context="revue CodeRabbit" -f description="Revue publiée par CodeRabbit sur ce commit"
+      - run: |
+          # Seulement si la revue porte sur le commit de tête d'une PR ouverte du propriétaire vers dev.
+          head=$(gh pr view "$N" --json author,baseRefName,headRefName,headRefOid,isDraft,state \
+            --jq "select(.author.login == \"$OWNER\" and .baseRefName == \"dev\" and .headRefOid == \"$SHA\" and (.isDraft | not) and .state == \"OPEN\") | .headRefName")
+          [ -z "$head" ] && { echo "PR #$N : rien à armer"; exit 0; }
+          # main → dev (synchronisation) : commit de fusion, pour que dev contienne main.
+          if [ "$head" = main ]; then gh pr merge "$N" --auto --merge; else gh pr merge "$N" --auto --squash; fi
 
   relance:
-    if: github.event_name != 'pull_request_review'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       issues: write
+      checks: read
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
+      OWNER: ${{ github.repository_owner }}
     steps:
       - run: |
           marque='<!-- vigie:relance-coderabbit -->'
-          gh pr list --base dev --state open --json number,headRefOid,createdAt,isDraft \
+          gh pr list --base dev --state open --author "$OWNER" --json number,headRefOid,createdAt,isDraft \
             --jq '.[] | select(.isDraft | not) | select((now - (.createdAt | fromdateiso8601)) > 3600) | "\(.number) \(.headRefOid)"' |
           while read -r n sha; do
-            ok=$(gh api "repos/$GH_REPO/commits/$sha/status" --jq '[.statuses[] | select(.context == "revue CodeRabbit" and .state == "success")] | length')
-            [ "$ok" -gt 0 ] && continue
+            relu=$(gh api "repos/$GH_REPO/pulls/$n/reviews" --jq "[.[] | select(.user.login == \"coderabbitai[bot]\" and .commit_id == \"$sha\")] | length")
+            ok=$(gh api "repos/$GH_REPO/commits/$sha/check-runs" --jq '[.check_runs[] | select(.app.slug == "coderabbitai" and .conclusion == "success")] | length')
+            [ "$relu" -gt 0 ] || [ "$ok" -gt 0 ] && continue
             deja=$(gh api "repos/$GH_REPO/issues/$n/comments" --jq "[.[] | select(.body | contains(\"$marque\"))] | length")
             [ "$deja" -gt 0 ] && continue
             gh pr comment "$n" --body "@coderabbitai review
