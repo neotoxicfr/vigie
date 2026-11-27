@@ -161,11 +161,8 @@ func (s *Server) settingsPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func lines(v string) []string {
-	var out []string
-	for _, f := range strings.FieldsFunc(v, func(c rune) bool { return c == '\n' || c == ',' || c == ' ' || c == '\r' || c == '\t' }) {
-		out = append(out, f)
-	}
-	return out
+	var out []string // nil pour une saisie vide : les réglages enregistrés ne changent pas
+	return append(out, strings.FieldsFunc(v, func(c rune) bool { return c == '\n' || c == ',' || c == ' ' || c == '\r' || c == '\t' })...)
 }
 
 func parseAddrs(v, field string) ([]netip.Addr, error) {

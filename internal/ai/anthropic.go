@@ -50,7 +50,7 @@ func (p *anthropicProvider) Analyze(ctx context.Context, system, prompt string) 
 	for stream.Next() {
 		if err := resp.Accumulate(stream.Current()); err != nil {
 			stream.Close()
-			return "", fmt.Errorf("Anthropic : flux illisible : %w", err)
+			return "", fmt.Errorf("réponse d'Anthropic illisible : %w", err)
 		}
 	}
 	if err := stream.Err(); err != nil {
@@ -66,9 +66,9 @@ func (p *anthropicProvider) Analyze(ctx context.Context, system, prompt string) 
 			case 529, 500, 502, 503:
 				return "", errors.New("service Anthropic surchargé ou indisponible, réessaie plus tard")
 			}
-			return "", fmt.Errorf("Anthropic : HTTP %d", apierr.StatusCode)
+			return "", fmt.Errorf("service Anthropic : HTTP %d", apierr.StatusCode)
 		}
-		return "", fmt.Errorf("Anthropic injoignable : %w", err)
+		return "", fmt.Errorf("service Anthropic injoignable : %w", err)
 	}
 	if resp.StopReason == anthropic.BetaStopReasonRefusal {
 		return "", errors.New("le modèle a refusé l'analyse")
